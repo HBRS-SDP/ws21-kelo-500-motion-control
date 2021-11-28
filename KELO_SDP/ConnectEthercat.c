@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
   // reading all slave names w.r.t their id's
   for (int i = 1; i <= ecx_slavecount; i++)
   {
-    printf("slave(index) \t%i has name \t%s\n", i, ecx_slave[i].name);
+    printf("slave id \t%i has name \t%s\n", index_to_EtherCAT[i], ecx_slave[i].name);
   }
 
   // waiting for all slaves to reach SAFE_OP state
@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
     for (unsigned int i = 0; i < nWheels; i++)
     {
       txpdo1_t *ecData = (txpdo1_t *)ecx_slave[index_to_EtherCAT[i]].inputs;
-      printf("Pivot angle of wheel(id) %d: %f \n", nWheels[i], ecData->encoder_pivot);
+      printf("Pivot angle of wheel(id) %d: %f \n", index_to_EtherCAT[i], ecData->encoder_pivot);
     }
   }
 
