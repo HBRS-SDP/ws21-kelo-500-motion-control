@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
   ecx_writestate(&ecx_context, 0);
 
   //  checking if state is operational (by waiting for fixed time duration)
-  ecx_statecheck(&ecx_context, 0, EC_STATE_OPERATIONAL, EC_TIMEOUTSTATE); 
+  ecx_statecheck(&ecx_context, 0, EC_STATE_OPERATIONAL, EC_TIMEOUTSTATE);
   if (ecx_slave[0].state != EC_STATE_OPERATIONAL)
   {
     printf("EtherCAT slaves have not reached operational state\n");
@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
 
   //  sending control commands
   int counter = 0;
-  
+
   while (counter < 15000)
   {
     counter += 1;
@@ -159,13 +159,13 @@ int main(int argc, char *argv[])
     msg.command1 = COM1_ENABLE1 | COM1_ENABLE2 | COM1_MODE_VELOCITY;
     msg.limit1_p = 20;
     msg.limit1_n = -20;
-    msg.limit2_p = 20; 
+    msg.limit2_p = 20;
     msg.limit2_n = -20;
-    msg.setpoint1 = 2;  
-    msg.setpoint2 = -2;
+    msg.setpoint1 = 3;
+    msg.setpoint2 = -3;
 
     //  bulding message with uniform setpoint values
-    for (unsigned int i = 0; i < nWheels; i++) 
+    for (unsigned int i = 0; i < nWheels; i++)
     {
       rxpdo1_t *ecData = (rxpdo1_t *)ecx_slave[index_to_EtherCAT[i]].outputs;
       *ecData = msg;
