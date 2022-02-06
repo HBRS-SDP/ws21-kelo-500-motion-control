@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     ecx_context.manualstatechange = 0; // 0
 
     int nWheels = 4; //just for testing purpose
-    int index_to_EtherCAT[4] = {3, 5};
+    int index_to_EtherCAT[4] = {2, 3, 5, 6};
 
     if (!ecx_init(&ecx_context, "enp2s0"))
     { //port name on our PC to initiate connection
@@ -144,24 +144,44 @@ int main(int argc, char *argv[])
 
     // endwait = time (NULL) + seconds ;
     int cnt = 0;
-    double pivots[4];
-    while (cnt < 30000)
+    double pivot_angles[4];
+    double wheel_torques[8];
+    double motor_const = 3.5714; //(Ampere/Newton-meter)
+    const unsigned int N = 3;
+    gsl_matrix *b = gsl_matrix_alloc(N, 1);
+    gsl_matrix_set(b, 0, 0, 0.);
+    gsl_matrix_set(b, 1, 0, -50.);
+    gsl_matrix_set(b, 2, 0, 0.);
+
+    for (unsigned int i = 0; i < nWheels; i++)
     {
+        txpdo1_t *ecData = (txpdo1_t *)ecx_slave[index_to_EtherCAT[i]].inputs;
+        pivot_angles[i] = ecData->encoder_pivot;
+        // printf("EC_DATA: %f \n", ecData->encoder_pivot);
+    }   
+    
+
+    while (cnt < 1500) // 30000)
+    {
+        usleep(1000);
+        functions_main(wheel_torques, pivot_angles, b);
         cnt += 1;
         rxpdo1_t msg;
         msg.timestamp = time(NULL); // REASON?
-        msg.command1 = COM1_ENABLE1 | COM1_ENABLE2 | COM1_MODE_VELOCITY;
-        msg.limit1_p = 20;
-        msg.limit1_n = -20;
-        msg.limit2_p = 20;  // pos limit
-        msg.limit2_n = -20; // neg limit
-        msg.setpoint1 = 0;  // rad/sec
-        msg.setpoint2 = 0;
+        msg.command1 = COM1_ENABLE1 | COM1_ENABLE2 | COM1_MODE_TORQUE;
+        msg.limit1_p = 30;  // upper limit for first wheel
+        msg.limit1_n = -30; // lower limit for first wheel
+        msg.limit2_p = 30;  // upper limit for second wheel
+        msg.limit2_n = -30; // lower limit for second wheel
+        // msg.setpoint1 = 0;  // rad/sec
+        // msg.setpoint2 = 0;
 
         // printf(time (NULL));
 
         for (unsigned int i = 0; i < nWheels; i++) // runs all wheels
         {
+            msg.setpoint1 = -motor_const*wheel_torques[2*i];  // rad/sec
+            msg.setpoint2 = motor_const*wheel_torques[2*i+1];            
             rxpdo1_t *ecData = (rxpdo1_t *)ecx_slave[index_to_EtherCAT[i]].outputs;
             *ecData = msg;
         }
@@ -173,10 +193,12 @@ int main(int argc, char *argv[])
         for (unsigned int i = 0; i < nWheels; i++)
         {
             txpdo1_t *ecData = (txpdo1_t *)ecx_slave[index_to_EtherCAT[i]].inputs;
-            pivots[i] = ecData->encoder_pivot;
+            pivot_angles[i] = ecData->encoder_pivot;
             // printf("EC_DATA: %f \n", ecData->encoder_pivot);
         }
     }
- 
+
+    gsl_matrix_free(b);
+
     return 0;
 }
