@@ -46,6 +46,12 @@ void main()
         }
     }
 
+  // 3. get jacobian (A) -> JacobianMatrix.c
+    jacobian_matrix_calculator(A,
+                               pivot_angles,
+                               wheel_coordinates);
+
+
     
 
 }
