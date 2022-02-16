@@ -74,6 +74,29 @@ void main()
                                       castor_offset,
                                       half_wheel_distance);
 
-    
+    // 6. print results and free memory
+    printf("\nPivot forces:\n");
+    for (int i = 0; i < 8; i++)
+    {
+        printf("%f\t", pivot_forces[i]);
+    }
+
+    printf("\n\nWheel torques:\n");
+
+    for (int i = 0; i < 8; i++)
+    {
+        printf("%f\t", wheel_torques[i]);
+    }
+    gsl_matrix_free(A);
+    gsl_matrix_free(A_inv_T);
+    gsl_matrix_free(A_tmp);
+    gsl_matrix_free(A_inv_T_tmp);
+    gsl_matrix_free(b);
+    gsl_matrix_free(W);
+    gsl_matrix_free(K);
+    gsl_vector_free(u);
+    gsl_matrix_free(u_inv);
+    gsl_matrix_free(V);
+    gsl_vector_free(work);  
 
 }
