@@ -52,6 +52,21 @@ void main()
                                wheel_coordinates);
 
 
+    // 4. find force array (pivot_forces) -> PseudoInverse.c
+    force_vector_finder(pivot_forces,
+                        A,
+                        A_tmp,
+                        A_inv_T_tmp,
+                        A_inv_T,
+                        u,
+                        u_inv,
+                        V,
+                        W,
+                        K,
+                        work,
+                        b,
+                        M);
+
     
 
 }
