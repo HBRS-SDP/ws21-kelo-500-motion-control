@@ -67,6 +67,13 @@ void main()
                         b,
                         M);
 
+    // 5. find torques at individual wheels (wheel_torques) -> TorqueTransmission.c
+    map_pivot_forces_to_wheel_torques(pivot_forces,
+                                      wheel_torques,
+                                      radius,
+                                      castor_offset,
+                                      half_wheel_distance);
+
     
 
 }
