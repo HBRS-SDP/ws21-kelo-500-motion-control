@@ -17,6 +17,35 @@ void main()
     double pivot_forces[8];
     const unsigned int N = 3;
     const unsigned int M = 8;
+// 2. initialise memory to matrices and vectors
+    gsl_matrix *A = gsl_matrix_alloc(N, M);
+    gsl_matrix *A_inv_T = gsl_matrix_alloc(M, N);
+    gsl_matrix *A_tmp = gsl_matrix_alloc(N, M);
+    gsl_matrix *A_inv_T_tmp = gsl_matrix_alloc(M, N);
+    gsl_vector *work = gsl_vector_alloc(N);
+    gsl_matrix *W = gsl_matrix_alloc(N, N); // assign values
+    gsl_matrix *K = gsl_matrix_alloc(M, M); // assign values
+    gsl_matrix *b = gsl_matrix_alloc(N, 1); // assign values
+    gsl_vector *u = gsl_vector_alloc(N);
+    gsl_matrix *V = gsl_matrix_alloc(N,N);
+    gsl_matrix *u_inv = gsl_matrix_alloc(N, N);
 
+    // substitute platform force values
+    gsl_matrix_set(b, 0, 0, 0.);
+    gsl_matrix_set(b, 1, 0, 10.);
+    gsl_matrix_set(b, 2, 0, 0.);
+
+    // substitute W,K values
+    size_t i, j;
+    for (i = 0; i < M; i++)
+    {
+        gsl_matrix_set(K, i, i, 1.0);
+        if (i < N)
+        {
+            gsl_matrix_set(W, i, i, 1.0);
+        }
+    }
+
+    
 
 }
