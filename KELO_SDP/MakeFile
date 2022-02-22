@@ -1,0 +1,8 @@
+setup:
+	gcc -I"../install/include/" -L"../install/lib/" setup.c -lsoem -lpthread -lgsl -ldl -lgslcblas -lm -o setup_output
+
+run_setup:
+	sudo ./setup_output
+	
+clean:
+	rm -f setup_output

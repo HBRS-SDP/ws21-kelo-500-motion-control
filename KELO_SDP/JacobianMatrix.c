@@ -10,10 +10,10 @@ void jacobian_matrix_calculator(gsl_matrix *A,
   for (i = 0; i < 4; ++i)
   {
     gsl_matrix_set(A, 0, 2 * i, gsl_sf_cos(pivot_angles[i]));
-    gsl_matrix_set(A, 0, 2 * i + 1, gsl_sf_sin(pivot_angles[i]));
-    gsl_matrix_set(A, 1, 2 * i, -gsl_sf_sin(pivot_angles[i]));
+    gsl_matrix_set(A, 0, 2 * i + 1, -gsl_sf_sin(pivot_angles[i]));
+    gsl_matrix_set(A, 1, 2 * i, gsl_sf_sin(pivot_angles[i]));
     gsl_matrix_set(A, 1, 2 * i + 1, gsl_sf_cos(pivot_angles[i]));
-    gsl_matrix_set(A, 2, 2 * i, -wheel_coordinates[2 * i] * gsl_sf_sin(pivot_angles[i]));
-    gsl_matrix_set(A, 2, 2 * i + 1, wheel_coordinates[2 * i + 1] * gsl_sf_cos(pivot_angles[i]));
+    gsl_matrix_set(A, 2, 2 * i,     wheel_coordinates[2 * i] * gsl_sf_sin(pivot_angles[i]) - wheel_coordinates[2 * i + 1] * gsl_sf_cos(pivot_angles[i]));
+    gsl_matrix_set(A, 2, 2 * i + 1, wheel_coordinates[2 * i] * gsl_sf_cos(pivot_angles[i]) + wheel_coordinates[2 * i + 1] * gsl_sf_sin(pivot_angles[i]));
   }
 }
