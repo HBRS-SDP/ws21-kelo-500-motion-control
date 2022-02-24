@@ -14,7 +14,12 @@
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_multifit.h>
-// #include <time.h>
+#include <unistd.h>
+#include "Utils.c"
+#include "PseudoInverse.h"
+#include "TorqueTransmission.h"
+#include "JacobianMatrix.h"
+#include <gsl/gsl_matrix_double.h>
 
 int main(int argc, char *argv[])
 {
@@ -96,7 +101,7 @@ int main(int argc, char *argv[])
         {
             if (ecx_slave[i].state != EC_STATE_SAFE_OP)
             {
-                printf("Slave %i State= %i\n", i, ecx_slave[i].state); //<< ecx_slave[i].state << " StatusCode=" << ecx_slave[i].ALstatuscode << " : " << ec_ALstatuscode2string(ecx_slave[i].ALstatuscode) << "\n";
+                printf("Slave %i State= %i\n", i, ecx_slave[i].state);
             }
         }
         return 0;
@@ -139,15 +144,23 @@ int main(int argc, char *argv[])
         printf("Operational state reached for all EtherCAT slaves.\n");
     }
 
-    time_t endwait;
-    int seconds = 5;
-
-    // endwait = time (NULL) + seconds ;
     int cnt = 0;
+    const unsigned int N = 3;
+    const unsigned int M = 8;
+    gsl_matrix *A = gsl_matrix_alloc(N, M);
+    gsl_matrix *A_inv_T = gsl_matrix_alloc(M, N);
+    gsl_matrix *A_tmp = gsl_matrix_alloc(N, M);
+    gsl_matrix *A_inv_T_tmp = gsl_matrix_alloc(M, N);
+    gsl_vector *work = gsl_vector_alloc(N);
+    gsl_matrix *W = gsl_matrix_alloc(N, N); // assign values
+    gsl_matrix *K = gsl_matrix_alloc(M, M); // assign values
+    gsl_vector *u = gsl_vector_alloc(N);
+    gsl_matrix *V = gsl_matrix_alloc(N, N);
+    gsl_matrix *u_inv = gsl_matrix_alloc(N, N);  
+      
     double pivot_angles[4];
     double wheel_torques[8];
     double motor_const = 3.5714; //(Ampere/Newton-meter)
-    const unsigned int N = 3;
     gsl_matrix *b = gsl_matrix_alloc(N, 1);
     gsl_matrix_set(b, 0, 0, 0.);
     gsl_matrix_set(b, 1, 0, -50.);
@@ -157,33 +170,57 @@ int main(int argc, char *argv[])
     {
         txpdo1_t *ecData = (txpdo1_t *)ecx_slave[index_to_EtherCAT[i]].inputs;
         pivot_angles[i] = ecData->encoder_pivot;
-        // printf("EC_DATA: %f \n", ecData->encoder_pivot);
     }   
     
-
-    while (cnt < 1500) // 30000)
+    size_t i;
+    for (i = 0; i < M; i++)
     {
-        usleep(1000);
-        functions_main(wheel_torques, pivot_angles, b);
+
+        gsl_matrix_set(K, i, i, 1.0);
+        if (i < N)
+        {
+            gsl_matrix_set(W, i, i, 1.0);
+        }
+    }
+    
+    while (cnt < 500)
+    {
+        usleep(10000);
+        functions_main(wheel_torques,
+                       pivot_angles,
+                       b,
+                       b_verify,
+                       A,
+                       A_inv_T,
+                       A_tmp,
+                       A_inv_T_tmp,
+                       work,
+                       W,
+                       K,
+                       u,
+                       V,
+                       u_inv,
+                       M,
+                       N);
         cnt += 1;
         rxpdo1_t msg;
         msg.timestamp = time(NULL); // REASON?
         msg.command1 = COM1_ENABLE1 | COM1_ENABLE2 | COM1_MODE_TORQUE;
-        msg.limit1_p = 30;  // upper limit for first wheel
-        msg.limit1_n = -30; // lower limit for first wheel
-        msg.limit2_p = 30;  // upper limit for second wheel
-        msg.limit2_n = -30; // lower limit for second wheel
-        // msg.setpoint1 = 0;  // rad/sec
-        // msg.setpoint2 = 0;
-
-        // printf(time (NULL));
-
+        msg.limit1_p = 3;  // upper limit for first wheel
+        msg.limit1_n = -3; // lower limit for first wheel
+        msg.limit2_p = 3;  // upper limit for second wheel
+        msg.limit2_n = -3; // lower limit for second wheel
+        
+        printf("\nsetpoint values:\n");
         for (unsigned int i = 0; i < nWheels; i++) // runs all wheels
         {
             msg.setpoint1 = -motor_const*wheel_torques[2*i];  // rad/sec
             msg.setpoint2 = motor_const*wheel_torques[2*i+1];            
             rxpdo1_t *ecData = (rxpdo1_t *)ecx_slave[index_to_EtherCAT[i]].outputs;
             *ecData = msg;
+            // angles after offsetting the pivots
+            printf("%f\t", -motor_const * wheel_torques[2 * i]);
+            printf("%f\t", motor_const * wheel_torques[2 * i + 1]);            
         }
 
         ecx_send_processdata(&ecx_context); //Sending process data
@@ -194,11 +231,22 @@ int main(int argc, char *argv[])
         {
             txpdo1_t *ecData = (txpdo1_t *)ecx_slave[index_to_EtherCAT[i]].inputs;
             pivot_angles[i] = ecData->encoder_pivot;
-            // printf("EC_DATA: %f \n", ecData->encoder_pivot);
         }
     }
 
     gsl_matrix_free(b);
+    gsl_matrix_free(b_verify);
+
+    gsl_matrix_free(A);
+    gsl_matrix_free(A_inv_T);
+    gsl_matrix_free(A_tmp);
+    gsl_matrix_free(A_inv_T_tmp);
+    gsl_matrix_free(W);
+    gsl_matrix_free(K);
+    gsl_vector_free(u);
+    gsl_matrix_free(u_inv);
+    gsl_matrix_free(V);
+    gsl_vector_free(work);
 
     return 0;
 }
