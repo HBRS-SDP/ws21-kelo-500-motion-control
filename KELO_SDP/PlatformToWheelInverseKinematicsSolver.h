@@ -1,5 +1,5 @@
-#ifndef MAIN_FUNC_H
-#define MAIN_FUNC_H
+#ifndef PLATFORM_WHEEL_INVERSE_KINEMATICS_SOLVER_H
+#define PLATFORM_WHEEL_INVERSE_KINEMATICS_SOLVER_H
 
 #include <gsl/gsl_matrix_double.h>
 
@@ -18,6 +18,6 @@ void functions_main(double *wheel_torques,
                     gsl_matrix *V,
                     gsl_matrix *u_inv,
                     const unsigned int M,
-                    const unsigned int N) ;
+                    const unsigned int N);
 
-#endif 
+#endif

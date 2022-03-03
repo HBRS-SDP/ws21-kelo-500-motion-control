@@ -3,6 +3,9 @@ setup:
 
 run_setup:
 	sudo ./setup_output
+
+run_debug_setup:
+	sudo ./setup_output debug
 	
 clean:
 	rm -f setup_output

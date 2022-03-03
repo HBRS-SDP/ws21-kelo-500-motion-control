@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "TorqueTransmission.h"
+#include "SmartWheelKinematics.h"
 
 void map_pivot_force_to_wheel_torque(const double *pivot_forces,
                                      double *wheel_torques,
