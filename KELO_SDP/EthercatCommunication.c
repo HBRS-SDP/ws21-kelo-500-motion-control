@@ -15,11 +15,12 @@
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_multifit.h>
 #include <unistd.h>
-#include "Utils.c"
+#include "PlatformToWheelInverseKinematicsSolver.c"
 #include "PseudoInverse.h"
 #include "TorqueTransmission.h"
-#include "JacobianMatrix.h"
+#include "KELORobotKinematics.h"
 #include <gsl/gsl_matrix_double.h>
+#include<string.h> 
 
 int main(int argc, char *argv[])
 {
@@ -64,20 +65,27 @@ int main(int argc, char *argv[])
     ecx_context.eepFMMU = &ec_FMMU;
     ecx_context.manualstatechange = 0; // 0
 
-    int nWheels = 4; //just for testing purpose
+    int nWheels = 4; // just for testing purpose
     int index_to_EtherCAT[4] = {2, 3, 5, 6};
+    bool debug = false;
+    char arg[] = "debug";
+    if (strcmp(argv[1],arg) == 0)
+    {
+        debug = true;
+    }
+    
 
     if (!ecx_init(&ecx_context, "enp2s0"))
-    { //port name on our PC to initiate connection
+    { // port name on our PC to initiate connection
         printf("Failed to initialize EtherCAT\n");
         return 0;
     }
     if (!ecx_config_init(&ecx_context, TRUE))
-    { //establish first connection with slave or autoconfig slaves
+    { // establish first connection with slave or autoconfig slaves
         printf("NO SLAVES!\n");
         return 0;
     }
-    ecx_config_map_group(&ecx_context, IOmap, 0); //PDO - process data object
+    ecx_config_map_group(&ecx_context, IOmap, 0); // PDO - process data object
 
     printf("%i\n", ecx_slavecount);
     printf("%s\n", ecx_slave[1].name);
@@ -123,16 +131,16 @@ int main(int argc, char *argv[])
         *ecData = msg;
     }
 
-    ecx_send_processdata(&ecx_context); //Sending process data
+    ecx_send_processdata(&ecx_context); // Sending process data
 
-    ecx_slave[0].state = EC_STATE_OPERATIONAL; //Setting state to operational
+    ecx_slave[0].state = EC_STATE_OPERATIONAL; // Setting state to operational
 
     ecx_send_processdata(&ecx_context);
-    ecx_receive_processdata(&ecx_context, EC_TIMEOUTRET); //receiving response from slaves
+    ecx_receive_processdata(&ecx_context, EC_TIMEOUTRET); // receiving response from slaves
 
     ecx_writestate(&ecx_context, 0);
 
-    ecx_statecheck(&ecx_context, 0, EC_STATE_OPERATIONAL, EC_TIMEOUTSTATE); //Checking if operational
+    ecx_statecheck(&ecx_context, 0, EC_STATE_OPERATIONAL, EC_TIMEOUTSTATE); // Checking if operational
 
     if (ecx_slave[0].state != EC_STATE_OPERATIONAL)
     {
@@ -156,8 +164,8 @@ int main(int argc, char *argv[])
     gsl_matrix *K = gsl_matrix_alloc(M, M); // assign values
     gsl_vector *u = gsl_vector_alloc(N);
     gsl_matrix *V = gsl_matrix_alloc(N, N);
-    gsl_matrix *u_inv = gsl_matrix_alloc(N, N);  
-      
+    gsl_matrix *u_inv = gsl_matrix_alloc(N, N);
+
     double pivot_angles[4];
     double wheel_torques[8];
     double motor_const = 3.5714; //(Ampere/Newton-meter)
@@ -170,8 +178,8 @@ int main(int argc, char *argv[])
     {
         txpdo1_t *ecData = (txpdo1_t *)ecx_slave[index_to_EtherCAT[i]].inputs;
         pivot_angles[i] = ecData->encoder_pivot;
-    }   
-    
+    }
+
     size_t i;
     for (i = 0; i < M; i++)
     {
@@ -182,7 +190,7 @@ int main(int argc, char *argv[])
             gsl_matrix_set(W, i, i, 1.0);
         }
     }
-    
+
     while (cnt < 500)
     {
         usleep(10000);
@@ -210,20 +218,20 @@ int main(int argc, char *argv[])
         msg.limit1_n = -3; // lower limit for first wheel
         msg.limit2_p = 3;  // upper limit for second wheel
         msg.limit2_n = -3; // lower limit for second wheel
-        
+
         printf("\nsetpoint values:\n");
         for (unsigned int i = 0; i < nWheels; i++) // runs all wheels
         {
-            msg.setpoint1 = -motor_const*wheel_torques[2*i];  // rad/sec
-            msg.setpoint2 = motor_const*wheel_torques[2*i+1];            
+            msg.setpoint1 = -motor_const * wheel_torques[2 * i]; // rad/sec
+            msg.setpoint2 = motor_const * wheel_torques[2 * i + 1];
             rxpdo1_t *ecData = (rxpdo1_t *)ecx_slave[index_to_EtherCAT[i]].outputs;
             *ecData = msg;
             // angles after offsetting the pivots
             printf("%f\t", -motor_const * wheel_torques[2 * i]);
-            printf("%f\t", motor_const * wheel_torques[2 * i + 1]);            
+            printf("%f\t", motor_const * wheel_torques[2 * i + 1]);
         }
 
-        ecx_send_processdata(&ecx_context); //Sending process data
+        ecx_send_processdata(&ecx_context); // Sending process data
 
         ecx_receive_processdata(&ecx_context, EC_TIMEOUTRET);
 

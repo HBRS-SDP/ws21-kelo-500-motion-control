@@ -1,7 +1,12 @@
-#ifndef PSEUDO_INVERSE_H
-#define PSEUDO_INVERSE_H
+#ifndef KELO_ROBOT_KINEMATICS_H
+#define KELO_ROBOT_KINEMATICS_H
 
 #include <gsl/gsl_matrix_double.h>
+
+void jacobian_matrix_calculator(gsl_matrix *A,
+                                const double *pivot_angles,
+                                const double *wheel_coordinates);
+
 
 void force_vector_finder(double *pivot_forces,
                         gsl_matrix *A,
