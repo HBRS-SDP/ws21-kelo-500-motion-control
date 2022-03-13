@@ -1,3 +1,10 @@
+/**
+ * @file PlatformToWheelInverseKinematicsSolver.c
+ * @author Sivva Rahul Sai (rahul.sivva@smail.inf.h-brs.de)
+ * @brief this file consists of a functionality to print a matrix and to integrate all functions related to calculating torques at individual wheel units
+ * @date 2022-03-12
+ *
+ */
 #include "SmartWheelKinematics.c"
 #include "KELORobotKinematics.c"
 #include <stdio.h>
@@ -35,9 +42,12 @@ void functions_main(double *wheel_torques,
                     const unsigned int N,
                     const bool debug)
 {
-    // 1. initialise robot geometrical parameters
-    // https://github.com/kelo-robotics/kelo_tulip/blob/73e6d134bd31da6c580846dc907ff1ce2565b406/src/VelocityPlatformController.cpp
-    // https://github.com/kelo-robotics/kelo_tulip/blob/master/src/PlatformDriver.cpp
+    /**
+     * @brief 1. initialise robot geometrical parameters
+     * https://github.com/kelo-robotics/kelo_tulip/blob/73e6d134bd31da6c580846dc907ff1ce2565b406/src/VelocityPlatformController.cpp
+     * https://github.com/kelo-robotics/kelo_tulip/blob/master/src/PlatformDriver.cpp
+     *
+     */
 
     double radius = 0.052;               // 0.105
     double castor_offset = 0.01;         // 0.01
@@ -46,7 +56,10 @@ void functions_main(double *wheel_torques,
     double wheel_coordinates[8] = {0.175, 0.1605, -0.175, 0.1605, -0.175, -0.1605, 0.175, -0.1605}; // x1,y1,x2,y2,..,y4
     double pivot_angles_deviation[4] = {-2.5, -1.25, -2.14, 1.49};                                  // https://github.com/kelo-robotics/kelo_tulip/blob/master/config/example.yaml
 
-    // updating pivot angles
+    /**
+     * @brief updating pivot angles
+     *
+     */
     size_t i;
     for (i = 0; i < 4; i++)
     {
@@ -55,12 +68,18 @@ void functions_main(double *wheel_torques,
 
     double pivot_forces[8];
 
-    // 2. get jacobian (A) -> JacobianMatrix.c
+    /**
+     * @brief 2. get jacobian (A) -> KELORobotKinematics.c
+     *
+     */
     jacobian_matrix_calculator(A,
                                pivot_angles,
                                wheel_coordinates);
 
-    // 3. find force array (pivot_forces) -> PseudoInverse.c
+    /**
+     * @brief 3. find force array (pivot_forces) -> KELORobotKinematics.c
+     *
+     */
     force_vector_finder(pivot_forces,
                         A,
                         A_tmp,
@@ -75,17 +94,27 @@ void functions_main(double *wheel_torques,
                         b,
                         M);
 
-    // 4. find torques at individual wheels (wheel_torques) -> SmartWheelKinematics.c
+    /**
+     * @brief 4. find torques at individual wheels (wheel_torques) -> SmartWheelKinematics.c
+     *
+     */
     map_pivot_forces_to_wheel_torques(pivot_forces,
                                       wheel_torques,
                                       radius,
                                       castor_offset,
                                       half_wheel_distance);
 
-    // 5. print results
+    /**
+     * @brief 5. to print results for debugging
+     *
+     */
     if (debug)
     {
-        printf("\n\n\n\nPivot angles:\n"); // angles after offsetting the pivots
+        /**
+         * @brief printing angles after offsetting the pivots
+         *
+         */
+        printf("\n\n\n\nPivot angles:\n");
         for (int i = 0; i < 4; i++)
         {
             printf("%f\t", pivot_angles[i]);
