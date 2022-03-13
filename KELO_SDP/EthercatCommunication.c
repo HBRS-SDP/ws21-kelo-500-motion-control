@@ -1,3 +1,10 @@
+/**
+ * @file EthercatCommunication.c
+ * @author Kavya Shankar (kavya.shankar@smail.inf.h-brs.de)
+ * @brief Establishing connection with ehtercat and performing data transfer with robot
+ * @date 2022-03-12
+ * 
+ */
 #include "soem/ethercat.h"
 #include "soem/ethercattype.h"
 #include "soem/nicdrv.h"
@@ -17,11 +24,18 @@
 #include <unistd.h>
 #include "PlatformToWheelInverseKinematicsSolver.c"
 #include "PseudoInverse.h"
-#include "SmartWheelKinematics.h"
+#include "TorqueTransmission.h"
 #include "KELORobotKinematics.h"
 #include <gsl/gsl_matrix_double.h>
-#include <string.h>
+#include<string.h> 
 
+/**
+ * @brief Establishing connection with ehtercat and performing data transfer with robot
+ * 
+ * @param argc 
+ * @param argv 
+ * @return int to signify successful execution of the function
+ */
 int main(int argc, char *argv[])
 {
     ec_slavet ecx_slave[EC_MAXSLAVE];
@@ -63,24 +77,33 @@ int main(int argc, char *argv[])
     ecx_context.PDOdesc = &ec_PDOdesc;
     ecx_context.eepSM = &ec_SM;
     ecx_context.eepFMMU = &ec_FMMU;
-    ecx_context.manualstatechange = 0; // 0
+    ecx_context.manualstatechange = 0; // should be 0
 
-    int nWheels = 4; // just for testing purpose
+    int nWheels = 4; 
     int index_to_EtherCAT[4] = {2, 3, 5, 6};
     bool debug = false;
     char arg[] = "debug";
-    if (strcmp(argv[1], arg) == 0)
+    if (strcmp(argv[1],arg) == 0)
     {
         debug = true;
     }
-
+    
+    /**
+     * @brief port name on our PC to initiate connection
+     * 
+     */
     if (!ecx_init(&ecx_context, "enp2s0"))
-    { // port name on our PC to initiate connection
+    { 
         printf("Failed to initialize EtherCAT\n");
         return 0;
     }
+
+    /**
+     * @brief checking establishment of first connection with slave or autoconfig slaves
+     * 
+     */
     if (!ecx_config_init(&ecx_context, TRUE))
-    { // establish first connection with slave or autoconfig slaves
+    { 
         printf("NO SLAVES!\n");
         return 0;
     }
@@ -89,13 +112,19 @@ int main(int argc, char *argv[])
     printf("%i\n", ecx_slavecount);
     printf("%s\n", ecx_slave[1].name);
 
-    // Reading all slave names w.r.t their no.
+    /**
+     * @brief Reading all slave names w.r.t their no.
+     * 
+     */
     for (int i = 1; i <= ecx_slavecount; i++)
     {
         printf("slave \t%i has name \t%s\n", i, ecx_slave[i].name);
     }
 
-    // wait for all slaves to reach SAFE_OP state
+    /**
+     * @brief waiting for all slaves to reach SAFE_OP state
+     * 
+     */
     ecx_statecheck(&ecx_context, 0, EC_STATE_SAFE_OP, EC_TIMEOUTSTATE);
 
     if (ecx_slave[0].state != EC_STATE_SAFE_OP)
@@ -103,7 +132,10 @@ int main(int argc, char *argv[])
         printf("EtherCAT slaves have not reached safe operational state\n");
         ecx_readstate(&ecx_context);
 
-        // If not all slaves operational find out which one
+        /**
+         * @brief if not all slaves operational, find out which one
+         * 
+         */
         for (int i = 1; i <= ecx_slavecount; i++)
         {
             if (ecx_slave[i].state != EC_STATE_SAFE_OP)
@@ -130,16 +162,32 @@ int main(int argc, char *argv[])
         *ecData = msg;
     }
 
-    ecx_send_processdata(&ecx_context); // Sending process data
+    /**
+     * @brief sending process data
+     * 
+     */
+    ecx_send_processdata(&ecx_context); 
 
-    ecx_slave[0].state = EC_STATE_OPERATIONAL; // Setting state to operational
+    /**
+     * @brief setting state to operational
+     * 
+     */
+    ecx_slave[0].state = EC_STATE_OPERATIONAL; 
 
+    /**
+     * @brief receiving response from slaves
+     * 
+     */
     ecx_send_processdata(&ecx_context);
-    ecx_receive_processdata(&ecx_context, EC_TIMEOUTRET); // receiving response from slaves
+    ecx_receive_processdata(&ecx_context, EC_TIMEOUTRET);
 
     ecx_writestate(&ecx_context, 0);
 
-    ecx_statecheck(&ecx_context, 0, EC_STATE_OPERATIONAL, EC_TIMEOUTSTATE); // Checking if operational
+    /**
+     * @brief checking if the slaves have reached operational state
+     * 
+     */
+    ecx_statecheck(&ecx_context, 0, EC_STATE_OPERATIONAL, EC_TIMEOUTSTATE); 
 
     if (ecx_slave[0].state != EC_STATE_OPERATIONAL)
     {
@@ -151,34 +199,55 @@ int main(int argc, char *argv[])
         printf("Operational state reached for all EtherCAT slaves.\n");
     }
 
+    /**
+     * @brief initialising pointers to variables used for solving the problem of inverse kinematics
+     * 
+     */
     int cnt = 0;
     const unsigned int N = 3;
     const unsigned int M = 8;
+    double motor_const = 3.5714; //units: (Ampere/Newton-meter)
     gsl_matrix *A = gsl_matrix_alloc(N, M);
     gsl_matrix *A_inv_T = gsl_matrix_alloc(M, N);
     gsl_matrix *A_tmp = gsl_matrix_alloc(N, M);
     gsl_matrix *A_inv_T_tmp = gsl_matrix_alloc(M, N);
     gsl_vector *work = gsl_vector_alloc(N);
-    gsl_matrix *W = gsl_matrix_alloc(N, N); // assign values
-    gsl_matrix *K = gsl_matrix_alloc(M, M); // assign values
+    gsl_matrix *W = gsl_matrix_alloc(N, N); 
+    gsl_matrix *K = gsl_matrix_alloc(M, M); 
     gsl_vector *u = gsl_vector_alloc(N);
     gsl_matrix *V = gsl_matrix_alloc(N, N);
     gsl_matrix *u_inv = gsl_matrix_alloc(N, N);
+    gsl_matrix *b = gsl_matrix_alloc(N, 1);
 
+    /**
+     * @brief initialising arrays to store pivot angles and wheel torques
+     * 
+     */
     double pivot_angles[4];
     double wheel_torques[8];
-    double motor_const = 3.5714; //(Ampere/Newton-meter)
-    gsl_matrix *b = gsl_matrix_alloc(N, 1);
-    gsl_matrix_set(b, 0, 0, 0.);
-    gsl_matrix_set(b, 1, 0, -50.);
-    gsl_matrix_set(b, 2, 0, 0.);
 
+    /**
+     * @brief setting input platform force values
+     * 
+     */
+    gsl_matrix_set(b, 0, 0, 0.); // force is set in X-direction
+    gsl_matrix_set(b, 1, 0, -50.); // force is set in Y-direction
+    gsl_matrix_set(b, 2, 0, 0.); // moment is set in anti-clockwise direction
+
+    /**
+     * @brief reading data from individual wheels
+     * 
+     */
     for (unsigned int i = 0; i < nWheels; i++)
     {
         txpdo1_t *ecData = (txpdo1_t *)ecx_slave[index_to_EtherCAT[i]].inputs;
         pivot_angles[i] = ecData->encoder_pivot;
     }
 
+    /**
+     * @brief setting the weght matrix
+     * 
+     */
     size_t i;
     for (i = 0; i < M; i++)
     {
@@ -190,9 +259,22 @@ int main(int argc, char *argv[])
         }
     }
 
+    /**
+     * @brief setting number of iterations until which the force has to be applied
+     * 
+     */
     while (cnt < 500)
     {
-        usleep(10000);
+        /**
+         * @brief setting sleep time between iterations to achieve communication frequency of 1000Hz
+         * 
+         */
+        usleep(1000);
+
+        /**
+         * @brief finding wheel torques for each iteration parameterised by pivot angles 
+         * 
+         */
         functions_main(wheel_torques,
                        pivot_angles,
                        b,
@@ -208,39 +290,52 @@ int main(int argc, char *argv[])
                        V,
                        u_inv,
                        M,
-                       N,
-                       debug);
+                       N);
         cnt += 1;
         rxpdo1_t msg;
-        msg.timestamp = time(NULL); // REASON?
+        msg.timestamp = time(NULL);
         msg.command1 = COM1_ENABLE1 | COM1_ENABLE2 | COM1_MODE_TORQUE;
         msg.limit1_p = 3;  // upper limit for first wheel
         msg.limit1_n = -3; // lower limit for first wheel
         msg.limit2_p = 3;  // upper limit for second wheel
         msg.limit2_n = -3; // lower limit for second wheel
 
-        if (debug)
-        {
-            printf("\nsetpoint values:\n");
-        }
+        /**
+         * @brief setting calculated torque values to individual wheels
+         * 
+         */
+        printf("\nsetpoint values:\n");
         for (unsigned int i = 0; i < nWheels; i++) // runs all wheels
         {
-            msg.setpoint1 = -motor_const * wheel_torques[2 * i]; // rad/sec
+            msg.setpoint1 = -motor_const * wheel_torques[2 * i]; // units: (rad/sec)
             msg.setpoint2 = motor_const * wheel_torques[2 * i + 1];
             rxpdo1_t *ecData = (rxpdo1_t *)ecx_slave[index_to_EtherCAT[i]].outputs;
             *ecData = msg;
-            // angles after offsetting the pivots
-            if (debug)
-            {
-                printf("%f\t", -motor_const * wheel_torques[2 * i]);
-                printf("%f\t", motor_const * wheel_torques[2 * i + 1]);
-            }
+
+            /**
+             * @brief printing angles after offsetting the pivots
+             * 
+             */
+            printf("%f\t", -motor_const * wheel_torques[2 * i]);
+            printf("%f\t", motor_const * wheel_torques[2 * i + 1]);
         }
 
-        ecx_send_processdata(&ecx_context); // Sending process data
+        /**
+         * @brief Construct a new ecx send processdata object
+         * 
+         */
+        ecx_send_processdata(&ecx_context); 
 
+        /**
+         * @brief Construct a new ecx receive processdata object
+         * 
+         */
         ecx_receive_processdata(&ecx_context, EC_TIMEOUTRET);
 
+        /**
+         * @brief receiving updated pivot angles
+         * 
+         */
         for (unsigned int i = 0; i < nWheels; i++)
         {
             txpdo1_t *ecData = (txpdo1_t *)ecx_slave[index_to_EtherCAT[i]].inputs;
@@ -248,6 +343,10 @@ int main(int argc, char *argv[])
         }
     }
 
+    /**
+     * @brief releasing memory from all initialised pointers
+     * 
+     */
     gsl_matrix_free(b);
     gsl_matrix_free(b_verify);
 
