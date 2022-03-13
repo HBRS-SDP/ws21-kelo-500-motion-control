@@ -17,10 +17,10 @@
 #include <unistd.h>
 #include "PlatformToWheelInverseKinematicsSolver.c"
 #include "PseudoInverse.h"
-#include "TorqueTransmission.h"
+#include "SmartWheelKinematics.h"
 #include "KELORobotKinematics.h"
 #include <gsl/gsl_matrix_double.h>
-#include<string.h> 
+#include <string.h>
 
 int main(int argc, char *argv[])
 {
@@ -69,11 +69,10 @@ int main(int argc, char *argv[])
     int index_to_EtherCAT[4] = {2, 3, 5, 6};
     bool debug = false;
     char arg[] = "debug";
-    if (strcmp(argv[1],arg) == 0)
+    if (strcmp(argv[1], arg) == 0)
     {
         debug = true;
     }
-    
 
     if (!ecx_init(&ecx_context, "enp2s0"))
     { // port name on our PC to initiate connection
@@ -209,7 +208,8 @@ int main(int argc, char *argv[])
                        V,
                        u_inv,
                        M,
-                       N);
+                       N,
+                       debug);
         cnt += 1;
         rxpdo1_t msg;
         msg.timestamp = time(NULL); // REASON?
@@ -219,7 +219,10 @@ int main(int argc, char *argv[])
         msg.limit2_p = 3;  // upper limit for second wheel
         msg.limit2_n = -3; // lower limit for second wheel
 
-        printf("\nsetpoint values:\n");
+        if (debug)
+        {
+            printf("\nsetpoint values:\n");
+        }
         for (unsigned int i = 0; i < nWheels; i++) // runs all wheels
         {
             msg.setpoint1 = -motor_const * wheel_torques[2 * i]; // rad/sec
@@ -227,8 +230,11 @@ int main(int argc, char *argv[])
             rxpdo1_t *ecData = (rxpdo1_t *)ecx_slave[index_to_EtherCAT[i]].outputs;
             *ecData = msg;
             // angles after offsetting the pivots
-            printf("%f\t", -motor_const * wheel_torques[2 * i]);
-            printf("%f\t", motor_const * wheel_torques[2 * i + 1]);
+            if (debug)
+            {
+                printf("%f\t", -motor_const * wheel_torques[2 * i]);
+                printf("%f\t", motor_const * wheel_torques[2 * i + 1]);
+            }
         }
 
         ecx_send_processdata(&ecx_context); // Sending process data
