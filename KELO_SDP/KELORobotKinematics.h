@@ -1,8 +1,8 @@
 /**
  * @file KELORobotKinematics.h
- * @author your name (you@domain.com)
+ * @author Kishan Sawant (kishan.sawant@smail.inf.h-brs.de)
  * @brief function to calculate the 3x8 Jacobian matrix(A) and to calculate forces at individual wheel units
- * @date 2022-03-12
+ * @date 2022-02-06
  * 
  */
 #ifndef KELO_ROBOT_KINEMATICS_H
