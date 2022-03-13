@@ -1,3 +1,11 @@
+/**
+ * @file SmartWheelKinematics.h
+ * @author Kavya Shankar (kavya.shankar@smail.inf.h-brs.de)
+ * @brief the mapping from pivot forces to wheel torques is formulated
+ * @date 2022-03-12
+ * 
+ */
+
 #include <stdio.h>
 #include "SmartWheelKinematics.h"
 
