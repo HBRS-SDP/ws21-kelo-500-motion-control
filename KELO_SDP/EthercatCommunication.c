@@ -23,8 +23,6 @@
 #include <gsl/gsl_multifit.h>
 #include <unistd.h>
 #include "PlatformToWheelInverseKinematicsSolver.c"
-#include "PseudoInverse.h"
-#include "TorqueTransmission.h"
 #include "KELORobotKinematics.h"
 #include <gsl/gsl_matrix_double.h>
 #include<string.h> 
@@ -269,7 +267,7 @@ int main(int argc, char *argv[])
          * @brief setting sleep time between iterations to achieve communication frequency of 1000Hz
          * 
          */
-        usleep(1000);
+        usleep(10000);
 
         /**
          * @brief finding wheel torques for each iteration parameterised by pivot angles 
