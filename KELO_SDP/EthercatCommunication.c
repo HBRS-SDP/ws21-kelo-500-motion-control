@@ -290,7 +290,8 @@ int main(int argc, char *argv[])
                        V,
                        u_inv,
                        M,
-                       N);
+                       N,
+                       debug);
         cnt += 1;
         rxpdo1_t msg;
         msg.timestamp = time(NULL);
@@ -304,7 +305,10 @@ int main(int argc, char *argv[])
          * @brief setting calculated torque values to individual wheels
          * 
          */
-        printf("\nsetpoint values:\n");
+        if (debug)
+        {
+            printf("\nsetpoint values:\n");
+        }
         for (unsigned int i = 0; i < nWheels; i++) // runs all wheels
         {
             msg.setpoint1 = -motor_const * wheel_torques[2 * i]; // units: (rad/sec)
@@ -316,8 +320,11 @@ int main(int argc, char *argv[])
              * @brief printing angles after offsetting the pivots
              * 
              */
-            printf("%f\t", -motor_const * wheel_torques[2 * i]);
-            printf("%f\t", motor_const * wheel_torques[2 * i + 1]);
+            if (debug)
+            {
+                printf("%f\t", -motor_const * wheel_torques[2 * i]);
+                printf("%f\t", motor_const * wheel_torques[2 * i + 1]);
+            }
         }
 
         /**
