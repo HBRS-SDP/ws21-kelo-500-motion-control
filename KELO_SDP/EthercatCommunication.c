@@ -216,6 +216,7 @@ int main(int argc, char *argv[])
     gsl_matrix *V = gsl_matrix_alloc(N, N);
     gsl_matrix *u_inv = gsl_matrix_alloc(N, N);
     gsl_matrix *b = gsl_matrix_alloc(N, 1);
+    gsl_matrix *b_verify = gsl_matrix_alloc(N, 1);
 
     /**
      * @brief initialising arrays to store pivot angles and wheel torques
