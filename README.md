@@ -29,7 +29,7 @@ execute run_setup to run in no debug mode
         run_setup:
 	        sudo ./setup_output no_debug
 
-execute run_debug_setup to run in no debug mode
+execute run_debug_setup to run in debug mode
 
         run_debug_setup:
 	        sudo ./setup_output debug
