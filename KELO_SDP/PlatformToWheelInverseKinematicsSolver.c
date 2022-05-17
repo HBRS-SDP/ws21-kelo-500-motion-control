@@ -64,6 +64,8 @@ void functions_main(double *wheel_torques,
     for (i = 0; i < 4; i++)
     {
         pivot_angles[i] = pivot_angles[i] - pivot_angles_deviation[i];
+        if (pivot_angles[i] > 2 * M_PI) pivot_angles[i] -= 2 * M_PI;
+        else if (pivot_angles[i] < 0.0) pivot_angles[i] += 2 * M_PI;
     }
 
     double pivot_forces[8];
