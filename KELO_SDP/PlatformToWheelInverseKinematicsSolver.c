@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include "PlatformToWheelInverseKinematicsSolver.h"
 #include <gsl/gsl_matrix_double.h>
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 void print_matrix(const gsl_matrix *m)
 {
